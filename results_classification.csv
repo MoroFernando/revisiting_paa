@@ -1,0 +1,4 @@
+dataset,classifier,reduction_method,retention_rate,series_size,accuracy,training_time,reduction_time
+ACSF1,Rocket,,,1460,0.89,22.52,0
+ACSF1,Rocket,,,1460,0.89,10.49,0
+ACSF1,Rocket,PAA,0.85,1241,0.87,8.79,2.55
