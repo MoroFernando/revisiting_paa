@@ -1,3 +1,0 @@
-dataset,classifier,operator,retention_rate,series_size,accuracy,training_time,reduction_time
-ACSF1,Rocket,,,1460,0.89,10.38,0
-ACSF1,Rocket,Average,0.85,1241,0.87,8.79,2.55
