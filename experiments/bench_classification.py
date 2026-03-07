@@ -1,4 +1,4 @@
-import time, os, gc, sys, logging
+import time, os, gc, sys, logging, warnings
 import pandas as pd
 import numpy as np
 from src.data_utils import load_and_normalize_dataset
@@ -6,13 +6,32 @@ from src.aggregators import AGG_FUNCS, PAA_reduce
 from src.models import get_classifiers
 from sklearn.metrics import accuracy_score
 
+# --- CONFIGURAÇÃO DE AMBIENTE ANP3 (GPU) ---
+if 'CONDA_PREFIX' in os.environ:
+    # Caminho das libs NVIDIA instaladas via PIP
+    base_lib = os.path.join(os.environ['CONDA_PREFIX'], 'lib/python3.10/site-packages/nvidia')
+    nvidia_paths = [
+        f"{base_lib}/cublas/lib",
+        f"{base_lib}/cudnn/lib",
+        f"{base_lib}/cuda_runtime/lib",
+        f"{base_lib}/cusolver/lib",
+        f"{base_lib}/cusparse/lib"
+    ]
+    # Injeta no ambiente do processo
+    os.environ['LD_LIBRARY_PATH'] = ":".join(nvidia_paths) + ":" + os.environ.get('LD_LIBRARY_PATH', '')
+    # Aponta o compilador XLA para a raiz do conda
+    os.environ['XLA_FLAGS'] = f"--xla_gpu_cuda_data_dir={os.environ['CONDA_PREFIX']}"
+
+# Silenciadores
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['NUMBA_DISABLE_PERFORMANCE_WARNINGS'] = '1'
+warnings.filterwarnings("ignore")
+
+# Log Limpo
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler("experiment_clf_details.log"),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.FileHandler("classification.log"), logging.StreamHandler(sys.stdout)]
 )
 
 DATASETS = [
