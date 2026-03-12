@@ -8,8 +8,8 @@ from sklearn.metrics import accuracy_score
 
 def get_classifier_instance(name, seed):
     clfs = {
-        "1NN-DTW": lambda: KNeighborsTimeSeriesClassifier(n_neighbors=1, distance="dtw"),
-        "Rocket": lambda: RocketClassifier(random_state=seed),
+        "1NN-DTW": lambda: KNeighborsTimeSeriesClassifier(n_neighbors=1, distance="dtw", distance_params={"window": 0.1}, n_jobs=-1),
+        "Rocket": lambda: RocketClassifier(random_state=seed, n_jobs=-1),
         "QUANT": lambda: QUANTClassifier(random_state=seed),
         "LITE": lambda: LITETimeClassifier(random_state=seed)
     }

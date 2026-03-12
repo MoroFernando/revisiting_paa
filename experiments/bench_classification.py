@@ -5,7 +5,6 @@ import psutil
 from multiprocessing import Process, Queue
 from src.data_utils import load_and_normalize_dataset
 from src.aggregators import AGG_FUNCS, PAA_reduce
-from src.models import get_classifier_instance, train_and_evaluate_classifier
 
 warnings.filterwarnings("ignore")
 
@@ -16,8 +15,8 @@ logging.basicConfig(
 )
 
 DATASETS = [
-    # 'ACSF1',
-    # 'CinCECGTorso',
+    'ACSF1',
+    'CinCECGTorso',
     'EOGHorizontalSignal',
     'EOGVerticalSignal',
     'EthanolLevel',
@@ -58,7 +57,6 @@ OUTPUT = 'results/results_classification.csv'
 def get_ram_usage():
     return psutil.Process(os.getpid()).memory_info().rss / (1024 ** 3)
 
-# --- FUNÇÃO TRABALHADORA (ISOLADA) ---
 def worker_proc(clf_name, seed, X_train, y_train, X_test, y_test, queue):
     """Essa função roda em um processo separado. Quando ela acaba, a RAM morre com ela."""
     try:
@@ -78,7 +76,7 @@ def worker_proc(clf_name, seed, X_train, y_train, X_test, y_test, queue):
         queue.put(e) # Envia o erro se algo falhar
 
 def run():
-    logging.info(f"🚀 Iniciando V4 (Isolamento). RAM Base: {get_ram_usage():.2f} GB")
+    logging.info(f"Iniciando Benchmark. RAM Base: {get_ram_usage():.2f} GB")
     os.makedirs('results', exist_ok=True)
 
     for i, ds_name in enumerate(DATASETS):
@@ -102,7 +100,7 @@ def run():
                     for clf_name in clf_names:
                         logging.info(f"   > {clf_name} | Rate: {rate} | Op: {op} | RAM: {get_ram_usage():.2f} GB")
                         
-                        # --- EXECUÇÃO ISOLADA ---
+                        # --- EXECUÇÃO ISOLADA EM PROCESSO FILHO ---
                         q = Queue()
                         p = Process(target=worker_proc, args=(clf_name, SEED, X_tr_proc, y_train, X_te_proc, y_test, q))
                         p.start()
@@ -122,7 +120,7 @@ def run():
                             pd.DataFrame([res]).to_csv(OUTPUT, mode='a', header=not os.path.exists(OUTPUT), index=False)
                             logging.info(f"      Sucesso: Acc={acc:.4f} em {duration}s")
                         
-                        # Limpeza leve no processo pai
+                        # Limpeza no processo pai
                         gc.collect()
 
                     if not is_baseline: del X_tr_proc, X_te_proc
