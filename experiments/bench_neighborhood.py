@@ -17,26 +17,26 @@ logging.basicConfig(
 
 DATASETS = [
     'ACSF1',
-    # 'CinCECGTorso',
-    # 'EOGHorizontalSignal',
-    # 'EOGVerticalSignal',
-    # 'EthanolLevel',
-    # 'HandOutlines',
-    # 'Haptics',
-    # 'HouseTwenty',
-    # 'InlineSkate',
-    # 'Mallat',
-    # 'MixedShapesRegularTrain',
-    # 'MixedShapesSmallTrain',
-    # 'Phoneme',
-    # 'PigAirwayPressure',
-    # 'PigArtPressure',
-    # 'PigCVP',
-    # 'Rock',
-    # 'SemgHandGenderCh2',
-    # 'SemgHandMovementCh2',
-    # 'SemgHandSubjectCh2',
-    # 'StarLightCurves',
+    'CinCECGTorso',
+    'EOGHorizontalSignal',
+    'EOGVerticalSignal',
+    'EthanolLevel',
+    'HandOutlines',
+    'Haptics',
+    'HouseTwenty',
+    'InlineSkate',
+    'Mallat',
+    'MixedShapesRegularTrain',
+    'MixedShapesSmallTrain',
+    'Phoneme',
+    'PigAirwayPressure',
+    'PigArtPressure',
+    'PigCVP',
+    'Rock',
+    'SemgHandGenderCh2',
+    'SemgHandMovementCh2',
+    'SemgHandSubjectCh2',
+    'StarLightCurves',
 ]
 RATES = [
     0.85, 
@@ -100,7 +100,7 @@ def run_neighborhood():
                     p.join()
 
                     if isinstance(result, Exception):
-                        logging.error(f"      ❌ Erro no cálculo: {result}")
+                        logging.error(f"      Erro no cálculo: {result}")
                     else:
                         p_at_k, trust = result
                         res = {
