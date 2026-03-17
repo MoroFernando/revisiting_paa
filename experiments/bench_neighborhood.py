@@ -52,7 +52,6 @@ def get_ram_usage():
     return psutil.Process(os.getpid()).memory_info().rss / (1024 ** 3)
 
 def neighborhood_worker(X_orig, X_red, k, queue):
-    """Calcula as métricas em um processo isolado."""
     try:
         n_samples = X_orig.shape[0]
         X_orig_flat = X_orig.reshape(n_samples, -1)
@@ -66,14 +65,13 @@ def neighborhood_worker(X_orig, X_red, k, queue):
         queue.put(e)
 
 def run_neighborhood():
-    logging.info(f"Iniciando Bench de Vizinhança. RAM Base: {get_ram_usage():.2f} GB")
+    logging.info(f"Starting Neighborhood Benchmark. Base RAM: {get_ram_usage():.2f} GB")
     os.makedirs('results', exist_ok=True)
 
     for i, ds_name in enumerate(DATASETS):
         logging.info(f"[{i+1}/{len(DATASETS)}] Dataset: {ds_name}")
         
         try:
-            # Carrega apenas o conjunto de treino
             X_train, _, _, _ = load_and_normalize_dataset(ds_name)
             
             # 100% Rate (Baseline)
@@ -84,14 +82,14 @@ def run_neighborhood():
                 for op in operators:
                     logging.info(f"   > Op: {op} | Rate: {rate} | RAM: {get_ram_usage():.2f} GB")
                     
-                    # Redução PAA
+                    # PAA Reduction
                     if is_baseline:
                         X_reduced = X_train
                     else:
                         w = int(X_train.shape[2] * rate)
                         X_reduced = np.array([[PAA_reduce(s, w, op) for s in sample] for sample in X_train], dtype=np.float32)
 
-                    # Cálculo Isolado
+                    # Isolate neighborhood calculations in a separate process to manage memory better
                     q = Queue()
                     p = Process(target=neighborhood_worker, args=(X_train, X_reduced, K, q))
                     p.start()
@@ -100,7 +98,7 @@ def run_neighborhood():
                     p.join()
 
                     if isinstance(result, Exception):
-                        logging.error(f"      Erro no cálculo: {result}")
+                        logging.error(f"      Error in calculation: {result}")
                     else:
                         p_at_k, trust = result
                         res = {
@@ -120,7 +118,7 @@ def run_neighborhood():
             gc.collect()
 
         except Exception as e:
-            logging.error(f"Erro Crítico no dataset {ds_name}: {str(e)}")
+            logging.error(f"Critical Error in dataset {ds_name}: {str(e)}")
 
 if __name__ == "__main__":
     run_neighborhood()

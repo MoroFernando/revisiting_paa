@@ -58,7 +58,7 @@ def get_ram_usage():
     return psutil.Process(os.getpid()).memory_info().rss / (1024 ** 3)
 
 def worker_proc(clf_name, seed, X_train, y_train, X_test, y_test, queue):
-    """Essa função roda em um processo separado. Quando ela acaba, a RAM morre com ela."""
+    """Execute model training and evaluation in a separate process."""
     try:
         import tensorflow as tf
         gpus = tf.config.list_physical_devices('GPU')
@@ -71,12 +71,12 @@ def worker_proc(clf_name, seed, X_train, y_train, X_test, y_test, queue):
         clf = get_classifier_instance(clf_name, seed)
             
         acc, duration = train_and_evaluate_classifier(clf, X_train, y_train, X_test, y_test)
-        queue.put((acc, duration)) # Envia o resultado de volta
+        queue.put((acc, duration)) # Send back results to parent process
     except Exception as e:
-        queue.put(e) # Envia o erro se algo falhar
+        queue.put(e) # Send back exception to parent process for logging
 
 def run():
-    logging.info(f"Iniciando Benchmark. RAM Base: {get_ram_usage():.2f} GB")
+    logging.info(f"Starting benchmark. Base RAM: {get_ram_usage():.2f} GB")
     os.makedirs('results', exist_ok=True)
 
     for i, ds_name in enumerate(DATASETS):
@@ -89,7 +89,7 @@ def run():
                 operators = [None] if is_baseline else list(AGG_FUNCS.keys())
                 
                 for op in operators:
-                    # Redução PAA
+                    # PAA Reduction
                     if is_baseline:
                         X_tr_proc, X_te_proc = X_train, X_test
                     else:
@@ -100,16 +100,16 @@ def run():
                     for clf_name in clf_names:
                         logging.info(f"   > {clf_name} | Rate: {rate} | Op: {op} | RAM: {get_ram_usage():.2f} GB")
                         
-                        # --- EXECUÇÃO ISOLADA EM PROCESSO FILHO ---
+                        # Isolate model training and evaluation in a separate process to manage memory better
                         q = Queue()
                         p = Process(target=worker_proc, args=(clf_name, SEED, X_tr_proc, y_train, X_te_proc, y_test, q))
                         p.start()
                         
-                        result = q.get() # Espera o resultado ou erro
-                        p.join() # O PROCESSO MORRE AQUI (Libera RAM instantaneamente)
+                        result = q.get()
+                        p.join()
 
                         if isinstance(result, Exception):
-                            logging.error(f"      Erro no {clf_name}: {result}")
+                            logging.error(f"      Error in {clf_name}: {result}")
                         else:
                             acc, duration = result
                             res = {
@@ -118,9 +118,9 @@ def run():
                                 'accuracy': acc, 'train_test_time': duration
                             }
                             pd.DataFrame([res]).to_csv(OUTPUT, mode='a', header=not os.path.exists(OUTPUT), index=False)
-                            logging.info(f"      Sucesso: Acc={acc:.4f} em {duration}s")
+                            logging.info(f"      Success: Acc={acc:.4f} in {duration}s")
                         
-                        # Limpeza no processo pai
+                        # Clean up after each classifier to free memory
                         gc.collect()
 
                     if not is_baseline: del X_tr_proc, X_te_proc
@@ -130,7 +130,7 @@ def run():
             gc.collect()
             
         except Exception as e:
-            logging.error(f"Erro Crítico no dataset {ds_name}: {str(e)}")
+            logging.error(f"Critical Error in dataset {ds_name}: {str(e)}")
 
 if __name__ == "__main__": 
     run()
